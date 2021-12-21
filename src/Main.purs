@@ -15,21 +15,23 @@ module Main
   )
   where
 
+import Prelude
+
+import Color (hsl)
+import Data.Foldable (foldl)
+import Data.Array as Arr
 import Data.Int (toNumber)
 import Data.List (List(..))
-import Data.Tuple (Tuple(..), fst, snd)
-import Prelude
-import Math (sqrt, pow)
-import Color (hsl)
-import Data.Array as Arr
 import Data.List as List
 import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Sequence (Seq, cons, filter, head, length)
 import Data.Sequence as Seq
 import Data.Traversable (for_)
+import Data.Tuple (Tuple(..), fst, snd)
 import Effect (Effect)
 import Effect.Class (liftEffect)
 import Effect.Random (randomInt)
+import Math (sqrt, pow)
 import Reactor (executeDefaultBehavior, getW, runReactor, updateW_)
 import Reactor.Events (Event(..))
 import Reactor.Graphics.Colors as Color
@@ -182,7 +184,7 @@ handleEvent event = do
               if time > 0.4 && (snakeIsWall direction || snakeIsInSnake) then
                 updateW_ {explosion: 
                   {coords:{x,y,z}, 
-                  explodingCoords: explodingCoordss createGrid {x,y,z} radiusConst 0, 
+                  explodingCoords: explodingCoordss createGrid {x,y,z} radiusConst, 
                   radius: exRadius, 
                   inExplosion: true}}
               else if time > 0.4 then do
@@ -211,20 +213,12 @@ handleEvent event = do
           snakeIsWall _ = false
 
 
-
-explodingCoordss :: forall a b.  Array { x :: Int, y :: Int| a} ->
-   { x :: Int, y :: Int | b } ->
-    Int ->
-    Int ->
-    List(Tuple Int{ x :: Int , y :: Int| a })
-explodingCoordss gridArr explosionInit radius arrIt = 
-  case Arr.index gridArr arrIt of
-    Nothing -> Nil
-    Just a -> if distanceFromCords a < radius 
-      then 
-        (Tuple (distanceFromCords a) a) List.: (explodingCoordss gridArr explosionInit radius (arrIt + 1))
-      else
-        explodingCoordss gridArr explosionInit radius (arrIt + 1) 
+explodingCoordss :: Array { x :: Int, y :: Int, z :: Int  } -> 
+  { x :: Int, y :: Int, z :: Int  } -> 
+  Int -> 
+  List (Tuple Int { x :: Int, y :: Int, z :: Int  })
+explodingCoordss gridArr explosionInit radius = 
+  foldl (\b a -> if distanceFromCords a < radius then Tuple (distanceFromCords a) a List.: b else b) Nil gridArr
   where
     distanceFromCords a = absoluteValue (a.x - explosionInit.x) + absoluteValue (a.y - explosionInit.y)
     absoluteValue i = if i < 0 then i * -1 else i
